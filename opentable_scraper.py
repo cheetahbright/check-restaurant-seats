@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-def scrape_opentable(restaurant_name, date, time):
+def scrape_opentable(restaurant_name: str, date: str, time: str) -> list[str]:
     """
     Scrapes OpenTable for available reservation slots for a given restaurant, date, and time.
 
@@ -23,11 +23,16 @@ def scrape_opentable(restaurant_name, date, time):
         "term": restaurant_name,
     }
 
-    # Send a GET request to OpenTable's search page
-    response = requests.get(search_url, params=params)
-
-    if response.status_code != 200:
-        print("Failed to fetch data from OpenTable.")
+    try:
+        response = requests.get(
+            search_url,
+            params=params,
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        response.raise_for_status()
+    except requests.RequestException as e:
+        print(f"Failed to fetch data from OpenTable: {e}")
         return []
 
     # Parse the HTML content
@@ -40,7 +45,7 @@ def scrape_opentable(restaurant_name, date, time):
 
     return slots
 
-def main():
+def main() -> None:
     print("OpenTable Reservation Scraper")
     restaurant_name = input("Enter the restaurant name: ").strip()
     date = input("Enter the date (YYYY-MM-DD): ").strip()

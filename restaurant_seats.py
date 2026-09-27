@@ -1,28 +1,33 @@
 import datetime
 
-# Sample restaurant data
+# Sample restaurant data (dates relative to today, so the demo never goes stale)
+_today = datetime.date.today()
+_d1 = (_today + datetime.timedelta(days=1)).isoformat()
+_d2 = (_today + datetime.timedelta(days=2)).isoformat()
+_d3 = (_today + datetime.timedelta(days=3)).isoformat()
+
 restaurants = {
     "Pizza Place": {
         "openings": {
-            "2025-08-01": ["18:00", "19:00", "20:00"],
-            "2025-08-02": ["17:00", "18:30"],
+            _d1: ["18:00", "19:00", "20:00"],
+            _d2: ["17:00", "18:30"],
         }
     },
     "Sushi Bar": {
         "openings": {
-            "2025-08-01": ["17:30", "19:30"],
-            "2025-08-03": ["18:00", "20:00"],
+            _d1: ["17:30", "19:30"],
+            _d3: ["18:00", "20:00"],
         }
     },
     "Burger Joint": {
         "openings": {
-            "2025-08-02": ["18:00", "19:00"],
-            "2025-08-03": ["17:00", "18:30", "20:00"],
+            _d2: ["18:00", "19:00"],
+            _d3: ["17:00", "18:30", "20:00"],
         }
     }
 }
 
-def check_openings_for_day(day):
+def check_openings_for_day(day: str) -> None:
     print(f"Openings for {day}:")
     found = False
     for name, info in restaurants.items():
@@ -35,7 +40,7 @@ def check_openings_for_day(day):
     if not found:
         print("No openings found for any restaurant on this day.")
 
-def check_next_available():
+def check_next_available() -> None:
     print("Next available openings:")
     today = datetime.date.today()
     found = False
@@ -56,7 +61,7 @@ def check_next_available():
     if not found:
         print("No upcoming openings found for any restaurant.")
 
-def main():
+def main() -> None:
     print("Restaurant Openings Checker")
     print("1. Check openings for a specific day")
     print("2. Check next available openings")
