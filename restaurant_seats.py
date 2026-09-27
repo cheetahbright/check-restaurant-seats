@@ -1,33 +1,20 @@
 import datetime
+import json
+from pathlib import Path
 
-# Sample restaurant data (dates relative to today, so the demo never goes stale)
-_today = datetime.date.today()
-_d1 = (_today + datetime.timedelta(days=1)).isoformat()
-_d2 = (_today + datetime.timedelta(days=2)).isoformat()
-_d3 = (_today + datetime.timedelta(days=3)).isoformat()
+DATA_FILE = Path(__file__).parent / "restaurants.json"
 
-restaurants = {
-    "Pizza Place": {
-        "openings": {
-            _d1: ["18:00", "19:00", "20:00"],
-            _d2: ["17:00", "18:30"],
-        }
-    },
-    "Sushi Bar": {
-        "openings": {
-            _d1: ["17:30", "19:30"],
-            _d3: ["18:00", "20:00"],
-        }
-    },
-    "Burger Joint": {
-        "openings": {
-            _d2: ["18:00", "19:00"],
-            _d3: ["17:00", "18:30", "20:00"],
-        }
-    }
-}
 
-def check_openings_for_day(day: str) -> None:
+def load_restaurants() -> dict:
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"Failed to load {DATA_FILE.name}: {e}")
+        raise SystemExit(1)
+
+
+def check_openings_for_day(restaurants: dict, day: str) -> None:
     print(f"Openings for {day}:")
     found = False
     for name, info in restaurants.items():
@@ -40,7 +27,7 @@ def check_openings_for_day(day: str) -> None:
     if not found:
         print("No openings found for any restaurant on this day.")
 
-def check_next_available() -> None:
+def check_next_available(restaurants: dict) -> None:
     print("Next available openings:")
     today = datetime.date.today()
     found = False
@@ -62,15 +49,16 @@ def check_next_available() -> None:
         print("No upcoming openings found for any restaurant.")
 
 def main() -> None:
+    restaurants = load_restaurants()
     print("Restaurant Openings Checker")
     print("1. Check openings for a specific day")
     print("2. Check next available openings")
     choice = input("Enter your choice (1/2): ").strip()
     if choice == "1":
         day = input("Enter date (YYYY-MM-DD): ").strip()
-        check_openings_for_day(day)
+        check_openings_for_day(restaurants, day)
     elif choice == "2":
-        check_next_available()
+        check_next_available(restaurants)
     else:
         print("Invalid choice.")
 
