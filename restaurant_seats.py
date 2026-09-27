@@ -1,28 +1,20 @@
 import datetime
+import json
+from pathlib import Path
 
-# Sample restaurant data
-restaurants = {
-    "Pizza Place": {
-        "openings": {
-            "2025-08-01": ["18:00", "19:00", "20:00"],
-            "2025-08-02": ["17:00", "18:30"],
-        }
-    },
-    "Sushi Bar": {
-        "openings": {
-            "2025-08-01": ["17:30", "19:30"],
-            "2025-08-03": ["18:00", "20:00"],
-        }
-    },
-    "Burger Joint": {
-        "openings": {
-            "2025-08-02": ["18:00", "19:00"],
-            "2025-08-03": ["17:00", "18:30", "20:00"],
-        }
-    }
-}
+DATA_FILE = Path(__file__).parent / "restaurants.json"
 
-def check_openings_for_day(day):
+
+def load_restaurants() -> dict:
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"Failed to load {DATA_FILE.name}: {e}")
+        raise SystemExit(1)
+
+
+def check_openings_for_day(restaurants: dict, day: str) -> None:
     print(f"Openings for {day}:")
     found = False
     for name, info in restaurants.items():
@@ -35,7 +27,7 @@ def check_openings_for_day(day):
     if not found:
         print("No openings found for any restaurant on this day.")
 
-def check_next_available():
+def check_next_available(restaurants: dict) -> None:
     print("Next available openings:")
     today = datetime.date.today()
     found = False
@@ -56,16 +48,17 @@ def check_next_available():
     if not found:
         print("No upcoming openings found for any restaurant.")
 
-def main():
+def main() -> None:
+    restaurants = load_restaurants()
     print("Restaurant Openings Checker")
     print("1. Check openings for a specific day")
     print("2. Check next available openings")
     choice = input("Enter your choice (1/2): ").strip()
     if choice == "1":
         day = input("Enter date (YYYY-MM-DD): ").strip()
-        check_openings_for_day(day)
+        check_openings_for_day(restaurants, day)
     elif choice == "2":
-        check_next_available()
+        check_next_available(restaurants)
     else:
         print("Invalid choice.")
 

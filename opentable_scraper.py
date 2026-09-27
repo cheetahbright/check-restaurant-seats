@@ -1,7 +1,22 @@
-import requests
-from bs4 import BeautifulSoup
+from urllib.parse import urlencode
 
-def scrape_opentable(restaurant_name, date, time):
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import sync_playwright
+
+# OpenTable's search results are rendered client-side by JS, so a plain HTTP
+# GET (the previous requests/BeautifulSoup approach) never sees the actual
+# time-slot buttons — only the pre-render page shell. This drives a real
+# (headless) browser instead and waits for the slots to render before reading
+# the DOM.
+#
+# SLOT_SELECTOR is a placeholder: this environment's network policy blocks
+# opentable.com, so it could not be verified against the live site. To find
+# the real one: open a restaurant search on opentable.com, right-click a
+# reservation time button, "Inspect", and copy its selector here.
+SLOT_SELECTOR = "button[data-test='time-slot']"
+
+
+def scrape_opentable(restaurant_name: str, date: str, time: str) -> list[str]:
     """
     Scrapes OpenTable for available reservation slots for a given restaurant, date, and time.
 
@@ -14,33 +29,29 @@ def scrape_opentable(restaurant_name, date, time):
         list: A list of available reservation times.
     """
     base_url = "https://www.opentable.com"
-    search_url = f"{base_url}/search"
-
-    # Parameters for the search query
     params = {
         "covers": 2,  # Number of people
         "dateTime": f"{date}T{time}",
         "term": restaurant_name,
     }
+    search_url = f"{base_url}/search?{urlencode(params)}"
 
-    # Send a GET request to OpenTable's search page
-    response = requests.get(search_url, params=params)
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(user_agent="Mozilla/5.0")
+            try:
+                page.goto(search_url, timeout=15000)
+                page.wait_for_selector(SLOT_SELECTOR, timeout=10000)
+            except PlaywrightTimeoutError:
+                print("No reservation slots appeared (the page may not have "
+                      "loaded, or SLOT_SELECTOR is out of date).")
+                return []
+            return [el.inner_text().strip() for el in page.query_selector_all(SLOT_SELECTOR)]
+        finally:
+            browser.close()
 
-    if response.status_code != 200:
-        print("Failed to fetch data from OpenTable.")
-        return []
-
-    # Parse the HTML content
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    # Find available reservation times (example: adjust based on actual HTML structure)
-    slots = []
-    for slot in soup.find_all("button", class_="time-button"):  # Adjust class name as needed
-        slots.append(slot.text.strip())
-
-    return slots
-
-def main():
+def main() -> None:
     print("OpenTable Reservation Scraper")
     restaurant_name = input("Enter the restaurant name: ").strip()
     date = input("Enter the date (YYYY-MM-DD): ").strip()
